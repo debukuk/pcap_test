@@ -40,13 +40,23 @@ int get_dport(u_char *pkt){
 }
 
 void print_data(u_char *pkt){
-	static char buf[0x64] = "";
-	int offset = pkt[46] >> 4 * 4;
+	char buf[0x64] = {'\0',};
+	int offset = (pkt[46] >> 4) * 4;
+	u_char data;
 	memcpy(buf, &(pkt[offset + 0x22]), 0x64);
 	printf("Data: ");
-	for(int i = 0; i < strlen(buf); i++){
-		printf("%02x ", buf[i] & 0xff);
-	}
+	
+	if (strlen(buf) > 10) 
+		for(int i = 0; i < 10; i++){
+			data = buf[i] & 0xff;
+			printf("%02x ", data);
+		}
+	else
+		for(int i = 0; i < strlen(buf); i++){
+			data = buf[i] & 0xff;
+			printf("%02x ", data);
+		}
+
 	printf("\n");
 }
 
@@ -64,7 +74,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
-	while (true) {
+	while(true){
 		struct pcap_pkthdr* header;
 		const u_char* packet;
 		int res = pcap_next_ex(handle, &header, &packet);
