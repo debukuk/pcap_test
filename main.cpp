@@ -44,7 +44,7 @@ void print_data(u_char *pkt){
 	int offset = (pkt[46] >> 4) * 4;
 	u_char data;
 	memcpy(buf, &(pkt[offset + 0x22]), 0x64);
-	printf("Data: ");
+	printf("- Data: [ ");
 	
 	if (strlen(buf) > 10) 
 		for(int i = 0; i < 10; i++){
@@ -57,7 +57,7 @@ void print_data(u_char *pkt){
 			printf("%02x ", data);
 		}
 
-	printf("\n");
+	printf("]\n");
 }
 
 int main(int argc, char* argv[]) {
@@ -74,6 +74,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 
+	int no = 0;
 	while(true){
 		struct pcap_pkthdr* header;
 		const u_char* packet;
@@ -82,15 +83,18 @@ int main(int argc, char* argv[]) {
 		if (res == -1 || res == -2) break;
 		//printf("%u bytes captured\n", header->caplen);
 		if (packet[23] == 6) {// TCP
-			printf("Source IP:Port(Mac) = %s:%d(%s) -> Dest IP:PORT(MAC) =  %s:%d(%s)\n\n", 
-			get_sip((u_char *)packet), 
-			get_sport((u_char *)packet), 
-			get_smac((u_char *)packet), 
-			get_dip((u_char *)packet), 
-			get_dport((u_char *)packet), 
-			get_dmac((u_char *)packet));
-
+			no++;
+			printf("\tNo. %d\n", no);
+			printf("===================================================\n");
+			printf("- Source IP: %s\n", get_sip((u_char *)packet));
+			printf("- Source Port: %d\n", get_sport((u_char *)packet));
+			printf("- Source Mac: %s\n", get_smac((u_char *)packet));
+			printf("- Destination IP: %s\n", get_dip((u_char *)packet));
+			printf("- Destination Port: %d\n", get_dport((u_char *)packet));
+			printf("- Destination Mac: %s\n", get_dmac((u_char *)packet));
 			print_data(((u_char *)packet)); // print data
+			printf("===================================================");
+			printf("\n\n");
 		}else if (packet[12] == 8 && packet[13] == 0) // Ethernet
 			printf("%s => %s\n\n", get_sip((u_char*)packet), get_dip((u_char*)packet));
 	}
