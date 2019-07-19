@@ -45,7 +45,7 @@ void print_data(u_char *pkt){
 	memcpy(buf, &(pkt[offset + 0x22]), 0x64);
 	printf("Data: ");
 	for(int i = 0; i < strlen(buf); i++){
-		printf("%x", buf[i]);
+		printf("%02x ", buf[i] & 0xff);
 	}
 	printf("\n");
 }
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
 		if (res == -1 || res == -2) break;
 		//printf("%u bytes captured\n", header->caplen);
 		if (packet[23] == 6) {// TCP
-			printf("Source IP:Port(Mac) =%s:%d(%s) -> Dest IP:PORT(MAC): %s:%d(%s)\n\n", 
+			printf("Source IP:Port(Mac) = %s:%d(%s) -> Dest IP:PORT(MAC) =  %s:%d(%s)\n\n", 
 			get_sip((u_char *)packet), 
 			get_sport((u_char *)packet), 
 			get_smac((u_char *)packet), 
