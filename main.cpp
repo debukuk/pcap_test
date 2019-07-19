@@ -1,34 +1,90 @@
 #include <pcap.h>
 #include <stdio.h>
+#include <string.h>
 
 void usage() {
-  printf("syntax: pcap_test <interface>\n");
-  printf("sample: pcap_test wlan0\n");
+	printf("syntax: pcap_test <interface>\n");
+	printf("sample: pcap_test wlan0\n");
+}
+
+char *get_smac(u_char *pkt){
+	static char buf[18] = "";
+	sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", pkt[6], pkt[5], pkt[4], pkt[3], pkt[2], pkt[1]);
+	return buf;
+}
+
+char *get_dmac(u_char *pkt){
+	static char buf[18] = "";
+	sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", pkt[12], pkt[11], pkt[10], pkt[9], pkt[8], pkt[7]);
+	return buf;
+}
+
+char *get_sip(u_char *pkt){
+	static char buf[16] = "";
+	sprintf(buf,"%d.%d.%d.%d", pkt[26], pkt[27], pkt[28], pkt[29]);
+	return buf;
+}
+
+char *get_dip(u_char *pkt){
+	static char buf[16] = "";
+	sprintf(buf,"%d.%d.%d.%d", pkt[30], pkt[31], pkt[32], pkt[33]);
+	return buf;
+}
+
+int get_sport(u_char *pkt){
+	return (pkt[34]*0x100) + pkt[35];
+}
+
+int get_dport(u_char *pkt){
+	return (pkt[36]*0x100) + pkt[37];
+}
+
+void print_data(u_char *pkt){
+	static char buf[0x64] = "";
+	int offset = pkt[46] >> 4 * 4;
+	memcpy(buf, &(pkt[offset + 0x22]), 0x64);
+	printf("Data: ");
+	for(int i = 0; i < strlen(buf); i++){
+		printf("%x", buf[i]);
+	}
+	printf("\n");
 }
 
 int main(int argc, char* argv[]) {
-  if (argc != 2) {
-    usage();
-    return -1;
-  }
+	if (argc != 2) {
+		usage();
+		return -1;
+	}
 
-  char* dev = argv[1];
-  char errbuf[PCAP_ERRBUF_SIZE];
-  pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
-  if (handle == NULL) {
-    fprintf(stderr, "couldn't open device %s: %s\n", dev, errbuf);
-    return -1;
-  }
+	char* dev = argv[1];
+	char errbuf[PCAP_ERRBUF_SIZE];
+	pcap_t* handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+	if (handle == NULL) {
+		fprintf(stderr, "couldn't open device %s: %s\n", dev, errbuf);
+		return -1;
+	}
 
-  while (true) {
-    struct pcap_pkthdr* header;
-    const u_char* packet;
-    int res = pcap_next_ex(handle, &header, &packet);
-    if (res == 0) continue;
-    if (res == -1 || res == -2) break;
-    printf("%u bytes captured\n", header->caplen);
-  }
+	while (true) {
+		struct pcap_pkthdr* header;
+		const u_char* packet;
+		int res = pcap_next_ex(handle, &header, &packet);
+		if (res == 0) continue;
+		if (res == -1 || res == -2) break;
+		//printf("%u bytes captured\n", header->caplen);
+		if (packet[23] == 6) {// TCP
+			printf("Source IP:Port(Mac) =%s:%d(%s) -> Dest IP:PORT(MAC): %s:%d(%s)\n\n", 
+			get_sip((u_char *)packet), 
+			get_sport((u_char *)packet), 
+			get_smac((u_char *)packet), 
+			get_dip((u_char *)packet), 
+			get_dport((u_char *)packet), 
+			get_dmac((u_char *)packet));
 
-  pcap_close(handle);
-  return 0;
+			print_data(((u_char *)packet)); // print data
+		}else if (packet[12] == 8 && packet[13] == 0) // Ethernet
+			printf("%s => %s\n\n", get_sip((u_char*)packet), get_dip((u_char*)packet));
+	}
+
+	pcap_close(handle);
+	return 0;
 }
