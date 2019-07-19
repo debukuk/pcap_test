@@ -8,25 +8,25 @@ void usage() {
 }
 
 char *get_smac(u_char *pkt){
-	static char buf[18] = "";
+	static char buf[16] = {'\0',};
 	sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", pkt[6], pkt[5], pkt[4], pkt[3], pkt[2], pkt[1]);
 	return buf;
 }
 
 char *get_dmac(u_char *pkt){
-	static char buf[18] = "";
+	static char buf[16] = {'\0',};
 	sprintf(buf, "%02x:%02x:%02x:%02x:%02x:%02x", pkt[12], pkt[11], pkt[10], pkt[9], pkt[8], pkt[7]);
 	return buf;
 }
 
 char *get_sip(u_char *pkt){
-	static char buf[16] = "";
+	static char buf[16] = {'\0',};
 	sprintf(buf,"%d.%d.%d.%d", pkt[26], pkt[27], pkt[28], pkt[29]);
 	return buf;
 }
 
 char *get_dip(u_char *pkt){
-	static char buf[16] = "";
+	static char buf[16] = {'\0',};
 	sprintf(buf,"%d.%d.%d.%d", pkt[30], pkt[31], pkt[32], pkt[33]);
 	return buf;
 }
@@ -40,13 +40,13 @@ int get_dport(u_char *pkt){
 }
 
 void print_data(u_char *pkt){
-	char buf[0x64] = {'\0',};
-	int offset = (pkt[46] >> 4) * 4;
+	static char buf[16] = {'\0',};
+	int offset = pkt[46] >> 4 * 4;
 	u_char data;
 	memcpy(buf, &(pkt[offset + 0x22]), 0x64);
 	printf("- Data: [ ");
 	
-	if (strlen(buf) > 10) 
+	if (strlen(buf) > 10)
 		for(int i = 0; i < 10; i++){
 			data = buf[i] & 0xff;
 			printf("%02x ", data);
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
 		if (res == 0) continue;
 		if (res == -1 || res == -2) break;
 		//printf("%u bytes captured\n", header->caplen);
-		if (packet[23] == 6) {// TCP
+		if (packet[23] == 6) { // When the packet is TCP
 			no++;
 			printf("\tNo. %d\n", no);
 			printf("===================================================\n");
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
 			print_data(((u_char *)packet)); // print data
 			printf("===================================================");
 			printf("\n\n");
-		}else if (packet[12] == 8 && packet[13] == 0) // Ethernet
+		}else if (packet[12] == 8 && packet[13] == 0) // When the packet is Ethernet
 			printf("%s => %s\n\n", get_sip((u_char*)packet), get_dip((u_char*)packet));
 	}
 
