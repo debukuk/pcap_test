@@ -40,7 +40,7 @@ int get_dport(u_char *pkt){
 }
 
 void print_data(u_char *pkt){
-	static char buf[16] = {'\0',};
+	static char buf[0x64] = {'\0',};
 	int offset = pkt[46] >> 4 * 4;
 	u_char data;
 	memcpy(buf, &(pkt[offset + 0x22]), 0x64);
